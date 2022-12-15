@@ -42,9 +42,11 @@ PODS:
     - MicrosoftFluentUI/Separator_ios
   - MicrosoftFluentUI/TouchForwardingView_ios (0.3.9):
     - MicrosoftFluentUI/Core_ios
+  - SwiftForms (1.8.2)
 
 DEPENDENCIES:
   - AzureCommunicationUICalling (= 1.0.0)
+  - SwiftForms
 
 SPEC REPOS:
   trunk:
@@ -52,13 +54,15 @@ SPEC REPOS:
     - AzureCommunicationCommon
     - AzureCommunicationUICalling
     - MicrosoftFluentUI
+    - SwiftForms
 
 SPEC CHECKSUMS:
   AzureCommunicationCalling: 38d174fc96f252aaaff5f758029623656b6c6349
   AzureCommunicationCommon: 85a3f0ab952db4f88e03bbdb03e79197f90f1d5d
   AzureCommunicationUICalling: f953f11d3aef1b1ddb4dcdb14da731a21d2b0039
   MicrosoftFluentUI: a1e8f35e43e615a3522c53492f1bc52e9d2a191e
+  SwiftForms: f0d4d30401e21de87d9b7b63a4691a3d4e22bab5
 
-PODFILE CHECKSUM: aa0f506af084a1ca15aae60ca4bcc525e35a1d29
+PODFILE CHECKSUM: 50e9af8e22742269aa8d4ac56ea633d05bda8420
 
 COCOAPODS: 1.11.3

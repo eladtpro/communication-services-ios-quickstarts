@@ -6,37 +6,78 @@
 import UIKit
 import AzureCommunicationCalling
 import AzureCommunicationUICalling
+import SwiftForms
 
 class ViewController: UIViewController {
 
+    let ACSTokenFunctionUrl: String = "https://acs-services.azurewebsites.net/api/get-acs-token"
+    let ACSTokenFunctionCode: String = "jvidI4UrhZw7owoYIbXSBha2f9gqr6vlbWHYqnQXyLNEAzFuiRVoLg=="
+    var DefaultTeamsLink: String = "https://teams.microsoft.com/l/meetup-join/19%3ameeting_N2QyN2ZhMjktMGJhOS00ODE3LWI3OWYtODFmYmZkNmUxZDk0%40thread.v2/0?context=%7b%22Tid%22%3a%2272f988bf-86f1-41af-91ab-2d7cd011db47%22%2c%22Oid%22%3a%22306b794d-9ae0-42cc-8e24-56aa267578b0%22%7d"
+    
+    
+    var urlComponents: URLComponents? {
+        var urlComponents = URLComponents(string: ACSTokenFunctionUrl)
+        urlComponents?.queryItems = [
+            URLQueryItem(name: "code", value: ACSTokenFunctionCode)
+        ]
+
+        return urlComponents
+    }
     private var callComposite: CallComposite?
-    private var startButton: UIButton = UIButton(frame: CGRect(x: 100, y: 100, width: 200, height: 50))
     private var displayName: UITextField = UITextField(frame: CGRect(x: 100, y: 150, width: 200, height: 50))
     private var teamsLink: UITextField = UITextField(frame: CGRect(x: 100, y: 220, width: 200, height: 50))
     private var acsToken: UITextField = UITextField(frame: CGRect(x: 100, y: 290, width: 200, height: 100))
+    private var acsTokenExpiry: UITextField = UITextField(frame: CGRect(x: 100, y: 360, width: 200, height: 50))
+    private var startButton: UIButton = UIButton(frame: CGRect(x: 100, y: 430, width: 200, height: 50))
 
+//    private var displayName: String = "Guest"
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        self.startButton.contentEdgeInsets = UIEdgeInsets(top: 10.0, left: 20.0, bottom: 10.0, right: 20.0)
-        self.startButton.layer.cornerRadius = 10
-        self.startButton.backgroundColor = .systemBlue
-        self.startButton.setTitle("Start Experience", for: .normal)
-        self.startButton.addTarget(self, action: #selector(startCallComposite), for: .touchUpInside)
-        self.startButton.translatesAutoresizingMaskIntoConstraints = false
-        self.view.addSubview(self.startButton)
-        self.startButton.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
-        self.startButton.centerYAnchor.constraint(equalTo: view.centerYAnchor).isActive = true
-        self.startButton.isEnabled = false
-        self.startButton.alpha = 0.5
-
+//        // Create form instace
+//        var form = FormDescriptor()
+//        form.title = "Azure Communication Services"
+//
+//        // Define first section
+//        var section1 = FormSectionDescriptor(headerTitle: "Teams Call Settings", footerTitle: "Enter Teams Meeting Link")
+//
+//        var row = FormRowDescriptor(tag: "name", type: .text, title: "Display Name")
+//        section1.rows.append(row)
+//
+//        row = FormRowDescriptor(tag: "link", type: .url, title: "Meating Link")
+//        section1.rows.append(row)
+//
+//        row = FormRowDescriptor(tag: "token", type: .multilineText, title: "ACS Token")
+//        section1.rows.append(row)
+//
+//
+//        // Define second section
+//        var section2 = FormSectionDescriptor(headerTitle: "", footerTitle: "")
+//
+//        row = FormRowDescriptor(tag: "button", type: .button, title: "Start Experience")
+//        section2.rows.append(row)
+//
+//        form.sections = [section1, section2]
+//
+//        self.form = form
+        
+        
         self.displayName.text = "Guest"
         self.teamsLink.placeholder = "Teams Meating Link"
         self.teamsLink.addTarget(self, action: #selector(textFieldDidChange(_:)), for: .editingChanged)
+        self.teamsLink.text = DefaultTeamsLink;
+        self.acsToken.text = "TOKEN UNSET"
+        self.acsTokenExpiry.text = "TOKEN Expiry UNSET"
 
         intializeTextfield(txtField: self.displayName)
         intializeTextfield(txtField: self.teamsLink)
         intializeTextfield(txtField: self.acsToken)
+        intializeTextfield(txtField: self.acsTokenExpiry)
+        initializeButton(button: self.startButton)
+        self.startButton.isEnabled = false
+        self.startButton.alpha = 0.5
+
+        fetchToken();
     }
     
     private func intializeTextfield(txtField: UITextField)
@@ -52,7 +93,28 @@ class ViewController: UIViewController {
         txtField.clearButtonMode = UITextField.ViewMode.whileEditing;
         txtField.returnKeyType = .next
         txtField.contentVerticalAlignment = UIControl.ContentVerticalAlignment.center
+        txtField.leftViewMode = .always
+        let label = UILabel()
+        label.backgroundColor = UIColor.yellow
+        label.text = "Hello"
+        label.font = UIFont.systemFont(ofSize: 13)
+//        txtField.leftView = label
+        txtField.leftView?.addSubview(label)
+
         self.view.addSubview(txtField)
+    }
+    
+    private func initializeButton(button: UIButton){
+        button.contentEdgeInsets = UIEdgeInsets(top: 10.0, left: 20.0, bottom: 10.0, right: 20.0)
+        button.layer.cornerRadius = 10
+        button.backgroundColor = .systemBlue
+        button.setTitle("Start Experience", for: .normal)
+        button.addTarget(self, action: #selector(startCallComposite), for: .touchUpInside)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        self.view.addSubview(button)
+//        self.startButton.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
+//        self.startButton.centerYAnchor.constraint(equalTo: view.centerYAnchor).isActive = true
+
     }
     
     private func verifyUrl(urlString: String?) -> Bool {
@@ -64,8 +126,39 @@ class ViewController: UIViewController {
         return false
     }
     
+    private func fetchToken() -> Void
+    {
+        if let urlComponents = urlComponents, let url = urlComponents.url?.absoluteURL {
+            sendRequest(url) { (result, error) in
+                DispatchQueue.main.async {
+                    if(result != nil){
+                        self.acsToken.text = (result!["token"] as! String)
+                        self.acsTokenExpiry.text = (result!["expiresOn"] as! String)
+                    }
+                }
+            }
+        }
+    }
+    
+    func sendRequest(_ url: URL, completion: @escaping ([String: Any]?, Error?) -> Void) {
+        let task = URLSession.shared.dataTask(with: url) { data, response, error in
+            guard let data = data, // is there data
+                let response = response as? HTTPURLResponse, // is there HTTP response
+                (200 ..< 300) ~= response.statusCode, // is statusCode 2XX
+                error == nil else { // was there no error, otherwise ...
+                    completion(nil, error)
+                    return
+            }
+            let responseObject: [String: Any]? = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+            completion(responseObject, nil)
+        }
+        task.resume()
+    }
+    
+    // MARK: Actions
+    
     @objc private func textFieldDidChange(_ textField: UITextField) {
-        if (verifyUrl(urlString: self.teamsLink.text)) {
+        if (!verifyUrl(urlString: self.teamsLink.text)) {
             self.startButton.isEnabled = false
             self.startButton.alpha = 0.5
         }
@@ -79,7 +172,7 @@ class ViewController: UIViewController {
         let callCompositeOptions = CallCompositeOptions()
 
         callComposite = CallComposite(withOptions: callCompositeOptions)
-        let communicationTokenCredential = try! CommunicationTokenCredential(token: "eyJhbGciOiJSUzI1NiIsImtpZCI6IjEwNiIsIng1dCI6Im9QMWFxQnlfR3hZU3pSaXhuQ25zdE5PU2p2cyIsInR5cCI6IkpXVCJ9.eyJza3lwZWlkIjoiYWNzOmEwNjUzOTA2LWNiNjYtNDA0MC05ZWU0LWVmNjA1NzIwMThiN18wMDAwMDAxNC1lZWIzLWYyMjUtODc0YS1hZDNhMGQwMDg0NTciLCJzY3AiOjE3OTIsImNzaSI6IjE2Njc3Njk3MTYiLCJleHAiOjE2Njc4NTYxMTYsImFjc1Njb3BlIjoidm9pcCIsInJlc291cmNlSWQiOiJhMDY1MzkwNi1jYjY2LTQwNDAtOWVlNC1lZjYwNTcyMDE4YjciLCJyZXNvdXJjZUxvY2F0aW9uIjoiZXVyb3BlIiwiaWF0IjoxNjY3NzY5NzE2fQ.XAGOdHX8GZyr0M_sH6uAELaWh9EuvESA5gx_TKvBjmGSJdAd2NtK_TtpgAV6-1jKNxu8RFL1PGLGsXfGrMBMlWy70L2wFC_8r9HHWaofTlk0vhTsgbvf_eihskGx1HKfpUhRxAg7bDlRD7R-_87YLaltMR_GfYFsQjx7lsPqRXAxWGj380xgxL310_FLCrvK9axvls7Mk3FLFkh3GT6xQr_4UikYxDxhE9Onu_KZ9qIWqivJGl4I29cd7OU8ekFeM_fIngXdMN8Kj6NtaTFA7jJxCnkI-1kDvd-zNA3gVP_gQo5nw2_eqS3JKHYsQ6ExlhsnKsZOyzLPIKBGlqcIMA")
+        let communicationTokenCredential = try! CommunicationTokenCredential(token: self.acsToken.text!)
 
         let remoteOptions = RemoteOptions(
             for:
