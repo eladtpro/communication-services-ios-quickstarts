@@ -13,7 +13,7 @@ struct ContentView: View {
     @State var link: String = ""
     @State var token: String = ""
     @State var expiry: String = ""
-    @State var useToken: Bool = true
+    @State var showConfiguration: Bool = false
     @State var notificationsEnabled: Bool = false
     @State private var previewIndex = 0
     
@@ -68,28 +68,36 @@ struct ContentView: View {
                 Section(header: Text("CALL SETTINGS")) {
                     TextField("Display Name", text: $name)
                     TextField("Meating Link", text: $link)
+                    Toggle("Show Configuration", isOn: $showConfiguration)
+                        .onAppear{
+                            fetchToken();
+                        }
+//                        .onChange(of: showConfiguration){value in
+//                            if(value == true){
+//                                print("fetching token")
+////                                SwiftSpinner.show("Loading") // Act. indicator found on github
+//                                fetchToken();
+//                            }
+//                        }
                 }
                 
-                Section(header: Text("CONFIGURATION")) {
-                    Toggle("Use Token", isOn: $useToken)
-                        .onChange(of: useToken){value in
-                            if(value == true){
-                                print("fetching token")
+                if showConfiguration {
+                    Section(header: Text("CONFIGURATION")) {
+                        TextField("ACS Token", text: $token)
+                        TextField("Token Expiry", text: $expiry)
+                        Button(action: {
+                            print("fetching token")
 //                                SwiftSpinner.show("Loading") // Act. indicator found on github
-                                fetchToken();
+                            fetchToken();
+                        }, label: {Text("Refresh Token")})
+                        Picker(selection: $previewIndex, label: Text("Show Previews")) {
+                            ForEach(0 ..< previewOptions.count, id: \.self) {
+                                Text(self.previewOptions[$0])
                             }
-                        }
-                    TextField("ACS Token", text: $token)
-                    TextField("Token Expiry", text: $expiry)
-//                    Toggle(isOn: $notificationsEnabled) {
-//                        Text("Enabled")
-//                    }
-                    Picker(selection: $previewIndex, label: Text("Show Previews")) {
-                        ForEach(0 ..< previewOptions.count, id: \.self) {
-                            Text(self.previewOptions[$0])
                         }
                     }
                 }
+                
                 
 //                Section(header: Text("ABOUT")) {
 //                    HStack {

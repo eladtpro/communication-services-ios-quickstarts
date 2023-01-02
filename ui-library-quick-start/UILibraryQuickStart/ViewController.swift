@@ -23,7 +23,7 @@ class ViewController: UIViewController {
         let formController = UIHostingController(rootView: ContentView(
 //            loading: self.loading,
             name: "Guest",
-            useToken: true,
+            showConfiguration: false,
             notificationsEnabled: false))
         
         if let form = formController.view {
