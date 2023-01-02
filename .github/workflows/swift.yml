@@ -22,7 +22,7 @@ jobs:
       run: ls -l
     - name: Path
       run: realpath .
-    - name: Build
+    - name: BuildS
       run: swift build -v
     - name: Run tests
       run: swift test -v
