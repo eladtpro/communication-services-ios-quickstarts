@@ -19,6 +19,8 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: List
+      run: ls -l
+    - name: Path
       run: realpath .
     - name: Build
       run: swift build -v
